@@ -1,9 +1,18 @@
-{{ $zellijVersion := "0.40.1" }}
 [".local/bin/zellij"]
 	type = "archive-file" 
 {{ if eq .chezmoi.os "darwin" }} 
-	url = "https://github.com/zellij-org/zellij/releases/download/v{{ $zellijVersion }}/zellij-aarch64-apple-darwin.tar.gz"
+	url = "https://github.com/zellij-org/zellij/releases/download/{{ .zellijVersion }}/zellij-aarch64-apple-darwin.tar.gz"
 {{ else }}
-	url = "https://github.com/zellij-org/zellij/releases/download/v{{ $zellijVersion }}/zellij-x86_64-unknown-linux-musl.tar.gz"
+	url = "https://github.com/zellij-org/zellij/releases/download/{{ .zellijVersion }}/zellij-x86_64-unknown-linux-musl.tar.gz"
 {{ end }}
 	path = "zellij"
+
+[".local/bin/starship"]
+	type = "archive-file"
+{{ if eq .chezmoi.os "darwin" }} 
+	url = "https://github.com/starship/starship/releases/download/{{ .starshipVersion }}/starship-aarch64-apple-darwin.tar.gz"
+{{ else }}
+	url = "https://github.com/starship/starship/releases/download/{{ .starshipVersion }}/starship-x86_64-unknown-linux-musl.tar.gz"
+{{ end }}
+	path = "starship"
+
