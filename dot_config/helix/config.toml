@@ -1,0 +1,6 @@
+theme = "catppuccin_macchiato"
+
+[editor]
+line-number = "relative"
+auto-save = true
+text-width = 100
