@@ -55,3 +55,28 @@
 	type = "git-repo"
 	url = "https://github.com/asdf-vm/asdf.git"
 	clone.args = ["--branch={{ .asdfVersion }}"]
+
+
+### Fonts
+{{ $fontDir := "" }}
+{{ if eq .chezmoi.os "darwin" }}
+{{-     $fontDir = "Library/Fonts" }}
+{{ else }}
+{{-     $fontDir = ".local/share/fonts" }}
+{{ end }}
+# FiraCode NF
+["{{ $fontDir }}/JetBrainsMonoNF"]
+    type = "archive"
+    url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/JetBrainsMono.tar.xz"
+    exclude = ["*.md"]
+
+["{{ $fontDir }}/UbuntuMonoNF"]
+    type = "archive"
+    url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/UbuntuMono.tar.xz"
+    exclude = ["*.md"]
+
+["{{ $fontDir }}/UbuntuNF"]
+    type = "archive"
+    url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/Ubuntu.tar.xz"
+    exclude = ["*.md"]
+
