@@ -1,3 +1,4 @@
+### Zellij shell session manager
 [".local/bin/zellij"]
 	type = "archive-file" 
 {{ if eq .chezmoi.os "darwin" }} 
@@ -7,6 +8,7 @@
 {{ end }}
 	path = "zellij"
 
+### Starship shell
 [".local/bin/starship"]
 	type = "archive-file"
 {{ if eq .chezmoi.os "darwin" }} 
@@ -15,4 +17,36 @@
 	url = "https://github.com/starship/starship/releases/download/{{ .starshipVersion }}/starship-x86_64-unknown-linux-musl.tar.gz"
 {{ end }}
 	path = "starship"
+
+
+### Helix editor
+[".local/bin/hx"]
+	type = "archive-file"
+{{ if eq .chezmoi.os "darwin" }}
+  url = "https://github.com/helix-editor/helix/releases/download/{{ .helixVersion }}/helix-{{ .helixVersion }}-aarch64-macos.tar.xz"
+{{ else }}
+  url = "https://github.com/helix-editor/helix/releases/download/{{ .helixVersion }}/helix-{{ .helixVersion }}-x86_64-linux.tar.xz"
+{{ end }}
+  path = "hx"
+	stripComponents = 1
+
+[".config/helix"]
+	type = "archive"
+{{ if eq .chezmoi.os "darwin" }}
+  url = "https://github.com/helix-editor/helix/releases/download/{{ .helixVersion }}/helix-{{ .helixVersion }}-aarch64-macos.tar.xz"
+{{ else }}
+  url = "https://github.com/helix-editor/helix/releases/download/{{ .helixVersion }}/helix-{{ .helixVersion }}-x86_64-linux.tar.xz"
+{{ end }}
+	stripComponents = 1
+  include = ["*/runtime/**"]
+
+[".config/fish/completions/hx.fish"]
+	type = "archive-file"
+{{ if eq .chezmoi.os "darwin" }}
+  url = "https://github.com/helix-editor/helix/releases/download/{{ .helixVersion }}/helix-{{ .helixVersion }}-aarch64-macos.tar.xz"
+{{ else }}
+  url = "https://github.com/helix-editor/helix/releases/download/{{ .helixVersion }}/helix-{{ .helixVersion }}-x86_64-linux.tar.xz"
+{{ end }}
+	stripComponents = 3
+  path = "hx.fish"
 
