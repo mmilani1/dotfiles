@@ -50,3 +50,8 @@
 	stripComponents = 3
   path = "hx.fish"
 
+### ASDF version manager
+[".asdf"]
+	type = "git-repo"
+	url = "https://github.com/asdf-vm/asdf.git"
+	clone.args = ["--branch={{ .asdfVersion }}"]
