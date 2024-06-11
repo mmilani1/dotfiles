@@ -1,0 +1,27 @@
+[user]
+	name = Matheus Milani
+	email = 32438065+mmilani1@users.noreply.github.com
+	signingkey = Matheus Milani
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[pull]
+	default = current
+	rebase = true
+[commit]
+	gpgsign = true
+[merge]
+	conflictstyle = zdiff3
+[rebase]
+	autosquash = true
+	autostash = true
+[init]
+	defaultBranch = main
+[rerere]
+	enabled = true
+[core]
+	pager = delta
+[diff]
+	algorithm = histogram
