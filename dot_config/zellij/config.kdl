@@ -1,3 +1,2 @@
-theme "default"
-default_layout "compact"
+theme "gruvbox-dark"
 on_force_close "quit"
