@@ -7,6 +7,7 @@ asdf plugin add rust
 asdf plugin add golang
 asdf plugin add java
 asdf plugin add kotlin
+asdf plugin add gradle
 asdf plugin add python
 
 asdf plugin-add direnv
