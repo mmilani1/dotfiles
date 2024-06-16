@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/fish
 mkdir -p ~/.config/fish/completions && ln -s ~/.asdf/completions/asdf.fish ~/.config/fish/completions
 
 asdf plugin add ruby
