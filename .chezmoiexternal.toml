@@ -137,19 +137,28 @@
 {{ else }}
 {{-     $fontDir = ".local/share/fonts" }}
 {{ end }}
-# FiraCode NF
+
 ["{{ $fontDir }}/JetBrainsMonoNF"]
-    type = "archive"
-    url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/JetBrainsMono.tar.xz"
-    exclude = ["*.md"]
+	type = "archive"
+	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/JetBrainsMono.tar.xz"
+	exclude = ["*.md"]
 
 ["{{ $fontDir }}/UbuntuMonoNF"]
-    type = "archive"
-    url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/UbuntuMono.tar.xz"
-    exclude = ["*.md"]
+	type = "archive"
+	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/UbuntuMono.tar.xz"
+	exclude = ["*.md"]
 
 ["{{ $fontDir }}/UbuntuNF"]
-    type = "archive"
-    url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/Ubuntu.tar.xz"
-    exclude = ["*.md"]
+	type = "archive"
+	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ .nerdFontVersion }}/Ubuntu.tar.xz"
+  exclude = ["*.md"]
 
+### Ollama
+[".local/bin/ollama"]
+	type = "file"
+{{ if eq .chezmoi.os "darwin"}}
+	url = "https://github.com/ollama/ollama/releases/download/{{ .ollamaVersion }}/ollama-darwin"
+{{ else }}
+	url = "https://github.com/ollama/ollama/releases/download/{{ .ollamaVersion }}/ollama-linux-amd64"
+{{ end }}
+	executable = true
