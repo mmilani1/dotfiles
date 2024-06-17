@@ -29,7 +29,6 @@
 
 [core]
 	pager = delta
-	excludesFile = '~/.gitignore'
 
 [diff]
 	algorithm = histogram
