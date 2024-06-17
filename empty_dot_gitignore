@@ -1,0 +1,7 @@
+# asdf
+.envrc
+.env
+.tool-versions
+
+# macOS
+.DS_Store
