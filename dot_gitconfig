@@ -10,18 +10,26 @@
 [pull]
 	default = current
 	rebase = true
+
 [commit]
 	gpgsign = true
+
 [merge]
 	conflictstyle = zdiff3
+
 [rebase]
 	autosquash = true
 	autostash = true
+
 [init]
 	defaultBranch = main
+
 [rerere]
 	enabled = true
+
 [core]
 	pager = delta
+	excludesfile = '~/.gitignore'
+
 [diff]
 	algorithm = histogram
