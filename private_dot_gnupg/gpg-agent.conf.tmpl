@@ -13,7 +13,7 @@ default-cache-ttl 600
 
 
 # Select PIN entry program (qt, curses, gnome3,...)
-{{ if eq .chezmoi.os 'darwin' }}
+{{ if eq .chezmoi.os "darwin" }}
 pinentry-program /opt/homebrew/bin/pinentry-mac
 {{ else }}
 # On Gentoo Linux: see also 'eselect pinentry list'
