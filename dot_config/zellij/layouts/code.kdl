@@ -1,6 +1,7 @@
 
 layout {
 	pane split_direction="horizontal" {
+		plugin location="zellij:statusbar"
 		pane size="70%"
 		pane size="30%"
 	}
