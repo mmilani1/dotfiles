@@ -1,2 +1,8 @@
+{{- $remoteDockerHost := promptString "remoteDockerHost" }}
+
+[data]
+    remoteDockerHost = {{ $remoteDockerHost | quote }}
+
 [git]
     autoCommit = true
+

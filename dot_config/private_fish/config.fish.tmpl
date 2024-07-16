@@ -10,8 +10,8 @@ if status is-interactive
 		set -x EDITOR hx
 	end
 
-	{{ if .chezmoi.remoteDockerHost }}
-		set -x DOCKER_HOST {{ .chezmoi.remoteDockerHost }}
+	{{ if .remoteDockerHost }}
+		set -x DOCKER_HOST {{ .remoteDockerHost }}
 	{{ end }}
 	
 	### ASDF
