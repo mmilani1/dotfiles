@@ -9,6 +9,10 @@ if status is-interactive
 	if type -q hx
 		set -x EDITOR hx
 	end
+
+	{{ if .chezmoi.remoteDockerHost }}
+		set -x DOCKER_HOST {{ .chezmoi.remoteDockerHost }}
+	{{ end }}
 	
 	### ASDF
 	source ~/.asdf/asdf.fish
