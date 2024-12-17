@@ -1,6 +1,0 @@
-theme = "gruvbox_dark_soft"
-
-[editor]
-line-number = "relative"
-auto-save = true
-text-width = 100
