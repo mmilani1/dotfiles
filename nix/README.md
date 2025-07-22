@@ -1,0 +1,4 @@
+- Install Deterninate Nix
+- Install Brew
+- Run `sudo nix run nix-darwin -- switch --flake .`
+- Add shell to etc/shells and run chsh -s fish
