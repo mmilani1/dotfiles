@@ -1,20 +1,21 @@
 # DOTFILES
+
+This repository is based on nix tooling to describe and manage my development setup and tools.
+
 ## How to install
-This repository includes files managed by [chezmoi](https://github.com/twpayne/chezmoi). This tool will automatically
-clone this repository, render and replace the managed files automatically.
+### macOS
+1. Install Nix with flakes support. Determinate-Nix installer is recommended
 
-* External liberaies and executables managed by chezmoi will be installed at ``$HOME/.local/bin`, so make sure this
- path is included in $PATH*
+2. Install Homebrew
 
-Referer to chezmoi documentation on how to get it running on your machine and run its `init` or run the command below to
-install it on `$HOME/.local/bin` and start the setup:
+3. Inside the repo, run `sudo nix run nix-darwin --switch --flake .`. This should handle all the setup by itself.
 
-```sh
-sh -c "$(curl -fsLS get.chezmoi.ioi/lb)" -- init --apply git@github.com:mmilani1/dotfiles.git
-```
+4. In order to use the correct login shell binary:
+4.1 Run `which zsh` to determine the correct path of the nix-managed zsh binary
+4.2 Edit `/etc/shells` and append the output from the last command to the end of file.
 
 ## Aditional information and software
-- Recommended terminal emulator: wezterm
-- Shell compatibility: fish
-- Color scheme: gruvbox material
+- Recommended terminal emulator: ghostty
+- Shell: zsh
+- Prefered color scheme: gruvbox material
 
