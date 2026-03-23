@@ -1,0 +1,48 @@
+[user]
+	name = Matheus Milani
+	email = 32438065+mmilani1@users.noreply.github.com
+
+[core]
+	excludesfile = ~/.gitignore_global
+	pager = delta
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+
+[merge]
+	conflictstyle = zdiff3
+
+[diff]
+	colorMoved = default
+	algorithm = histogram
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[pull]
+	rebase = true
+
+[rebase]
+	autosquash = true
+	autostash = true
+	updateRefs = true
+
+[rerere]
+	enabled = true
+	autoupdate = true
+
+[stash]
+	showIncludeUntracked = true
+
+[commit]
+	gpgsign = true
+
+[user]
+	signingkey = Matheus Milani
+
+[gpg]
+	format = openpgp
