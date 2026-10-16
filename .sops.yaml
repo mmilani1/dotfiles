@@ -1,0 +1,10 @@
+keys:
+  - &admin_gpg 4ADA2C9195B9FB33FDF2E583C28CE876381BB389
+  # Once homelab is installed, convert /etc/ssh/ssh_host_ed25519_key.pub via:
+  #   ssh-keyscan homelab | ssh-to-age
+  # and add `- &homelab_age age1...` below.
+creation_rules:
+  - path_regex: ^nixos/secrets\.ya?ml$
+    key_groups:
+      - pgp:
+          - *admin_gpg

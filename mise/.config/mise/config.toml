@@ -1,0 +1,11 @@
+[tools]
+node = "lts"
+python = "latest"
+uv = "latest"
+go = "latest"
+rust = "stable"
+bun = "latest"
+deno = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = ["node", "python", "go", "rust"]

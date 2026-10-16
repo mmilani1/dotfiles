@@ -1,0 +1,10 @@
+theme = Gruvbox Dark
+font-family = JetBrainsMono Nerd Font
+font-size = 13
+window-padding-x = 8
+window-padding-y = 8
+window-padding-balance = true
+macos-option-as-alt = true
+shell-integration = zsh
+confirm-close-surface = false
+copy-on-select = clipboard
