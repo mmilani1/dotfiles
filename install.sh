@@ -6,7 +6,7 @@ OS_NAME="$(uname -s)"
 
 COMMON_PACKAGES=(git zsh ghostty starship nvim mise gh gnupg)
 MACOS_PACKAGES=(aerospace)
-LINUX_PACKAGES=(niri)
+LINUX_PACKAGES=(niri noctalia)
 
 usage() {
     cat <<EOF
@@ -60,7 +60,7 @@ run_brew() {
 
     if [[ "$OS_NAME" == "Linux" ]]; then
         if command -v pacman &>/dev/null; then
-            local pacman_pkgs=(zsh ghostty fuzzel flatpak tailscale ttf-jetbrains-mono-nerd)
+            local pacman_pkgs=(zsh ghostty flatpak tailscale ttf-jetbrains-mono-nerd ccid)
             local missing_pkgs=()
             for pkg in "${pacman_pkgs[@]}"; do
                 if ! pacman -Qi "$pkg" &>/dev/null; then
@@ -182,10 +182,19 @@ run_stow() {
 }
 
 run_gpg() {
-    echo "==> Configuring GnuPG & importing public key..."
+    echo "==> Configuring GnuPG, Smartcard/YubiKey & SSH..."
     ensure_brew_in_path
-    mkdir -p "$HOME/.gnupg"
-    chmod 700 "$HOME/.gnupg"
+    mkdir -p "$HOME/.gnupg" "$HOME/.ssh"
+    chmod 700 "$HOME/.gnupg" "$HOME/.ssh"
+
+    # Populate known_hosts for GitHub if missing
+    if [[ ! -f "$HOME/.ssh/known_hosts" ]] || ! grep -q "github.com" "$HOME/.ssh/known_hosts" 2>/dev/null; then
+        if command -v ssh-keyscan &>/dev/null; then
+            echo "Adding github.com to ~/.ssh/known_hosts..."
+            ssh-keyscan -t ed25519,rsa github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+            chmod 644 "$HOME/.ssh/known_hosts"
+        fi
+    fi
 
     local pinentry_bin=""
     if [[ "$OS_NAME" == "Darwin" ]]; then
@@ -195,7 +204,16 @@ run_gpg() {
             pinentry_bin="$(command -v pinentry-mac || true)"
         fi
     else
-        pinentry_bin="$(command -v pinentry || true)"
+        # Prefer distro GUI pinentry on Linux (avoids pinentry-curses in Wayland/GUI)
+        if [[ -x /usr/bin/pinentry ]]; then
+            pinentry_bin="/usr/bin/pinentry"
+        elif [[ -x /usr/bin/pinentry-gnome3 ]]; then
+            pinentry_bin="/usr/bin/pinentry-gnome3"
+        elif [[ -x /usr/bin/pinentry-qt ]]; then
+            pinentry_bin="/usr/bin/pinentry-qt"
+        else
+            pinentry_bin="$(command -v pinentry || true)"
+        fi
     fi
 
     if [[ -z "$pinentry_bin" ]]; then
@@ -228,8 +246,13 @@ run_gpg() {
     fi
 
     if command -v gpg &>/dev/null && command -v curl &>/dev/null; then
-        curl -fsSL https://github.com/mmilani1.gpg | gpg --import ||
+        curl -fsSL https://github.com/mmilani1.gpg | gpg --import 2>/dev/null ||
             echo "Warning: failed to import GitHub GPG key" >&2
+    fi
+
+    # Learn connected smartcard / YubiKey stubs for GnuPG and SSH authentication
+    if command -v gpg-connect-agent &>/dev/null; then
+        gpg-connect-agent "scd serialno" "learn --force" /bye >/dev/null 2>&1 || true
     fi
 }
 
