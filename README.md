@@ -13,7 +13,7 @@ Unified multi-host configuration repository serving three machines without dupli
 ## Repository Layout
 
 - `Brewfile` — Cross-platform Homebrew bundle (`OS.mac?` Casks & `pinentry-mac`; `OS.linux?` Flatpaks & `pinentry`).
-- `install.sh` — Modular bootstrap script (`--all`, `--brew`, `--stow`, `--gpg`, `--mise`, `--macos`, `--help`).
+- `install.sh` — Modular bootstrap script (`--all`, `--brew`, `--stow`, `--shell`, `--gpg`, `--mise`, `--macos`, `--help`).
 - `macos_defaults.sh` — macOS system preferences, Dock layout, Caps Lock → Escape (`hidutil` + LaunchAgent), and Touch ID for `sudo`.
 - `.sops.yaml` — SOPS encryption rules for `nixos/secrets.yaml`.
 - **GNU Stow Packages**:
@@ -49,9 +49,10 @@ cd ~/.dev/dotfiles
 Or run individual stages with flags:
 
 ```bash
-./install.sh --brew    # Install Homebrew/Linuxbrew, Flatpaks, and Brewfile bundle
+./install.sh --brew    # Sync Homebrew/Flatpaks from Brewfile (installs new, uninstalls removed)
 ./install.sh --stow    # Conflict-safe GNU Stow symlink deployment into $HOME
-./install.sh --gpg     # Generate OS-specific gpg-agent.conf and import GitHub GPG key
+./install.sh --shell   # Configure default login shell to Zsh
+./install.sh --gpg     # Generate OS-specific gpg-agent.conf, mask distro GnuPG systemd user units (Linux), and import GitHub GPG key
 ./install.sh --mise    # Install global language runtimes declared in mise/config.toml
 ./install.sh --macos   # Apply macOS defaults, Dock layout, CapsLock->Escape, and Touch ID sudo
 ```

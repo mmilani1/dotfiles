@@ -32,6 +32,21 @@ if command -v gpgconf &>/dev/null; then
     gpgconf --launch gpg-agent 2>/dev/null
 fi
 
+# Completion System Initialization
+if [[ -d "$HOME/.cache/antidote/github.com/zsh-users/zsh-completions/src" ]]; then
+    fpath=("$HOME/.cache/antidote/github.com/zsh-users/zsh-completions/src" $fpath)
+fi
+autoload -Uz compinit
+mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+compinit -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump-${ZSH_VERSION}"
+
+# Tool Integrations
+command -v fzf &>/dev/null && source <(fzf --zsh)
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+command -v direnv &>/dev/null && eval "$(direnv hook zsh)"
+command -v mise &>/dev/null && eval "$(mise activate zsh)"
+command -v starship &>/dev/null && eval "$(starship init zsh)"
+
 # Antidote Plugin Manager
 if command -v brew &>/dev/null; then
     ANTIDOTE_PATH="$(brew --prefix)/opt/antidote/share/antidote/antidote.zsh"
@@ -44,8 +59,11 @@ fi
 # Highlight zsh-abbr abbreviations and feed into autosuggestions
 if (( ${#ABBR_REGULAR_USER_ABBREVIATIONS} )); then
     ZSH_HIGHLIGHT_HIGHLIGHTERS+=(regexp)
-    ZSH_HIGHLIGHT_REGEXP+=("^[[:blank:][:space:]]*(${(j:|:)${(Qk)ABBR_REGULAR_USER_ABBREVIATIONS}})$" fg=magenta,bold)
-    ZSH_HIGHLIGHT_REGEXP+=("\<(${(j:|:)${(Qk)ABBR_GLOBAL_USER_ABBREVIATIONS}})$" fg=magenta,bold)
+    ZSH_HIGHLIGHT_REGEXP+=("^[[:blank:][:space:]]*(${(j:|:)${(@Qk)ABBR_REGULAR_USER_ABBREVIATIONS}})$" fg=magenta,bold)
+fi
+if (( ${#ABBR_GLOBAL_USER_ABBREVIATIONS} )); then
+    ZSH_HIGHLIGHT_HIGHLIGHTERS+=(regexp)
+    ZSH_HIGHLIGHT_REGEXP+=("\<(${(j:|:)${(@Qk)ABBR_GLOBAL_USER_ABBREVIATIONS}})$" fg=magenta,bold)
 fi
 ZSH_AUTOSUGGEST_STRATEGY=(abbreviations ${ZSH_AUTOSUGGEST_STRATEGY[@]})
 
@@ -54,13 +72,6 @@ if (( $+functions[history-substring-search-up] )); then
     bindkey '^[[A' history-substring-search-up
     bindkey '^[[B' history-substring-search-down
 fi
-
-# Tool Integrations
-command -v fzf &>/dev/null && source <(fzf --zsh)
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
-command -v direnv &>/dev/null && eval "$(direnv hook zsh)"
-command -v mise &>/dev/null && eval "$(mise activate zsh)"
-command -v starship &>/dev/null && eval "$(starship init zsh)"
 
 # Local Secrets & Bitwarden CLI Helpers (zero plaintext secrets in Git)
 if [[ -f "$HOME/.config/secrets.env" ]]; then

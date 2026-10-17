@@ -5,6 +5,7 @@ uv = "latest"
 go = "latest"
 rust = "stable"
 bun = "latest"
+"go:github.com/Mic92/ssh-to-age/cmd/ssh-to-age" = "latest"
 deno = "latest"
 
 [settings]

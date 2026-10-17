@@ -76,20 +76,23 @@ in
       antidote = {
         enable = true;
         plugins = [
-          "zsh-users/zsh-autosuggestions"
-          "zsh-users/zsh-syntax-highlighting"
           "zsh-users/zsh-completions"
-          "zsh-users/zsh-history-substring-search"
           "Aloxaf/fzf-tab"
           "olets/zsh-abbr"
+          "zsh-users/zsh-history-substring-search"
+          "zsh-users/zsh-autosuggestions"
           "olets/zsh-autosuggestions-abbreviations-strategy"
+          "zsh-users/zsh-syntax-highlighting"
         ];
       };
       initContent = ''
         if (( ''${#ABBR_REGULAR_USER_ABBREVIATIONS} )); then
           ZSH_HIGHLIGHT_HIGHLIGHTERS+=(regexp)
-          ZSH_HIGHLIGHT_REGEXP+=("^[[:blank:][:space:]]*("''${(j:|:)''${(Qk)ABBR_REGULAR_USER_ABBREVIATIONS}}")$" fg=magenta,bold)
-          ZSH_HIGHLIGHT_REGEXP+=("\<("''${(j:|:)''${(Qk)ABBR_GLOBAL_USER_ABBREVIATIONS}}")$" fg=magenta,bold)
+          ZSH_HIGHLIGHT_REGEXP+=("^[[:blank:][:space:]]*("''${(j:|:)''${(@Qk)ABBR_REGULAR_USER_ABBREVIATIONS}}")$" fg=magenta,bold)
+        fi
+        if (( ''${#ABBR_GLOBAL_USER_ABBREVIATIONS} )); then
+          ZSH_HIGHLIGHT_HIGHLIGHTERS+=(regexp)
+          ZSH_HIGHLIGHT_REGEXP+=("\<("''${(j:|:)''${(@Qk)ABBR_GLOBAL_USER_ABBREVIATIONS}}")$" fg=magenta,bold)
         fi
         ZSH_AUTOSUGGEST_STRATEGY=( abbreviations $ZSH_AUTOSUGGEST_STRATEGY )
       '';

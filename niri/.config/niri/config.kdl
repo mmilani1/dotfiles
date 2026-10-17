@@ -18,6 +18,7 @@ input {
 layout {
     gaps 12
     center-focused-column "never"
+    background-color "transparent"
 
     preset-column-widths {
         proportion 0.33333
@@ -42,13 +43,67 @@ prefer-no-csd
 
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
+environment {
+    XDG_DATA_DIRS "/home/mmilani/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share"
+}
+
+// ────────────── Startup Applications ──────────────
+spawn-at-startup "sh" "-c" "if command -v noctalia >/dev/null 2>&1; then exec noctalia; elif command -v waybar >/dev/null 2>&1; then exec waybar; fi"
+
+// ────────────── Window Rules ──────────────
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+}
+
+window-rule {
+    match app-id="dev.noctalia.Noctalia"
+    open-floating true
+    default-column-width { fixed 1080; }
+    default-window-height { fixed 920; }
+}
+
+layer-rule {
+    match namespace="^noctalia-wallpaper"
+    place-within-backdrop true
+}
+
+layer-rule {
+    match namespace="^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd)$"
+    background-effect {
+        xray false
+    }
+}
+
 binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Launchers
-    Mod+Return { spawn "ghostty"; }
-    Mod+Space { spawn "fuzzel"; }
+    Mod+Return hotkey-overlay-title="Open Terminal" {
+        spawn-sh "if command -v ghostty >/dev/null 2>&1; then exec ghostty; elif command -v alacritty >/dev/null 2>&1; then exec alacritty; elif command -v kitty >/dev/null 2>&1; then exec kitty; elif command -v foot >/dev/null 2>&1; then exec foot; else exec xterm; fi";
+    }
+    Mod+Space hotkey-overlay-title="Open App Launcher" {
+        spawn-sh "noctalia msg panel-toggle launcher";
+    }
+    Mod+B hotkey-overlay-title="Open Browser" {
+        spawn-sh "if command -v zen-browser >/dev/null 2>&1; then exec zen-browser; elif command -v zen >/dev/null 2>&1; then exec zen; elif flatpak info app.zen_browser.zen >/dev/null 2>&1; then exec flatpak run app.zen_browser.zen; elif command -v firefox >/dev/null 2>&1; then exec firefox; elif command -v chromium >/dev/null 2>&1; then exec chromium; else exec xdg-open https://; fi";
+    }
     Mod+Q { close-window; }
+
+    // Desktop Shell Panels (Noctalia)
+    Mod+Shift+Return hotkey-overlay-title="Wallpaper Selector" { spawn-sh "noctalia msg panel-toggle wallpaper"; }
+    Mod+S            hotkey-overlay-title="Control Center" { spawn-sh "noctalia msg panel-toggle control-center"; }
+    Mod+Shift+S      hotkey-overlay-title="Settings" { spawn-sh "noctalia msg settings-toggle"; }
+    Mod+Alt+L        hotkey-overlay-title="Lock Screen" { spawn-sh "noctalia msg session lock"; }
+    Mod+Shift+Q      hotkey-overlay-title="Session Menu" { spawn-sh "noctalia msg panel-toggle session"; }
+
+    // Media & Hardware keys
+    XF86AudioRaiseVolume  allow-when-locked=true { spawn-sh "if command -v noctalia >/dev/null 2>&1; then noctalia msg volume-up; else wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+; fi"; }
+    XF86AudioLowerVolume  allow-when-locked=true { spawn-sh "if command -v noctalia >/dev/null 2>&1; then noctalia msg volume-down; else wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-; fi"; }
+    XF86AudioMute         allow-when-locked=true { spawn-sh "if command -v noctalia >/dev/null 2>&1; then noctalia msg volume-mute; else wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; fi"; }
+    XF86AudioMicMute      allow-when-locked=true { spawn-sh "if command -v noctalia >/dev/null 2>&1; then noctalia msg mic-mute; else wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; fi"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "if command -v noctalia >/dev/null 2>&1; then noctalia msg brightness-up; else brightnessctl set 5%+; fi"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "if command -v noctalia >/dev/null 2>&1; then noctalia msg brightness-down; else brightnessctl set 5%-; fi"; }
 
     // Focus (AeroSpace H/J/K/L parity)
     Mod+H { focus-column-left; }

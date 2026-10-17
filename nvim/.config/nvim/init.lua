@@ -66,17 +66,41 @@ require("lazy").setup({
   },
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "main",
     build = ":TSUpdate",
     config = function()
-      local ok, configs = pcall(require, "nvim-treesitter.configs")
-      if ok then
-        configs.setup({
-          ensure_installed = { "bash", "go", "json", "lua", "markdown", "python", "rust", "toml", "typescript", "vim", "yaml" },
-          auto_install = true,
-          highlight = { enable = true },
-          indent = { enable = true },
-        })
+      local ts = require("nvim-treesitter")
+      local filetypes = { "bash", "go", "json", "lua", "markdown", "python", "rust", "toml", "typescript", "vim", "yaml" }
+      local indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+
+      ts.install(filetypes)
+
+      local function enable(bufnr, lang)
+        if not vim.api.nvim_buf_is_valid(bufnr) then
+          return
+        end
+        vim.treesitter.start(bufnr, lang)
+        vim.api.nvim_set_option_value("indentexpr", indentexpr, { buf = bufnr })
       end
+
+      -- Highlight/indent once the parser is available; install on demand otherwise.
+      vim.api.nvim_create_autocmd("FileType", {
+        desc = "Enable Tree-sitter highlighting and indentation",
+        callback = function()
+          local bufnr = vim.api.nvim_get_current_buf()
+          local lang = vim.treesitter.language.get_lang(vim.bo.filetype)
+          if not lang then
+            return
+          end
+          if vim.treesitter.get_parser(bufnr, lang, { error = false }) then
+            enable(bufnr, lang)
+          else
+            ts.install({ lang }):await(function()
+              enable(bufnr, lang)
+            end)
+          end
+        end,
+      })
     end,
   },
 })

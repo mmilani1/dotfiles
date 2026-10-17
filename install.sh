@@ -19,6 +19,7 @@ Options:
   --all       Run all applicable steps (default)
   --brew      Install Homebrew/Flatpaks and bundle packages from Brewfile
   --stow      Symlink Stow packages into \$HOME (conflict-safe)
+  --shell     Configure default login shell to Zsh
   --gpg       Configure gpg-agent pinentry and import GitHub public GPG key
   --mise      Install global language runtimes via mise
   --macos     Apply macOS system defaults (Darwin only)
@@ -39,29 +40,69 @@ ensure_brew_in_path() {
     fi
 }
 
+can_sudo() {
+    sudo -n true 2>/dev/null || { [[ -t 0 ]] && sudo -v; }
+}
+
 run_brew() {
     echo "==> Setting up Homebrew & packages..."
+    local rc=0
     ensure_brew_in_path
     if ! command -v brew &>/dev/null; then
+        if [[ "$OS_NAME" == "Linux" ]] && ! can_sudo; then
+            echo "Error: Homebrew is missing and installing it requires sudo." >&2
+            return 1
+        fi
         echo "Installing Homebrew..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         ensure_brew_in_path
     fi
 
     if [[ "$OS_NAME" == "Linux" ]]; then
+        if command -v pacman &>/dev/null; then
+            local pacman_pkgs=(zsh ghostty fuzzel flatpak tailscale ttf-jetbrains-mono-nerd)
+            local missing_pkgs=()
+            for pkg in "${pacman_pkgs[@]}"; do
+                if ! pacman -Qi "$pkg" &>/dev/null; then
+                    missing_pkgs+=("$pkg")
+                fi
+            done
+            if ((${#missing_pkgs[@]})); then
+                if can_sudo; then
+                    echo "Installing Linux packages via pacman (${missing_pkgs[*]})..."
+                    sudo pacman -S --needed --noconfirm "${missing_pkgs[@]}" || rc=1
+                    command -v fc-cache &>/dev/null && fc-cache -f &>/dev/null || true
+                else
+                    echo "Warning: skipping pacman packages (needs sudo): sudo pacman -S --needed --noconfirm ${missing_pkgs[*]}" >&2
+                fi
+            fi
+        fi
+
         if command -v flatpak &>/dev/null; then
-            echo "Ensuring Flathub remote is configured..."
-            flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+            if ! flatpak remotes --system --columns=name 2>/dev/null | grep -qx flathub; then
+                if can_sudo; then
+                    echo "Ensuring Flathub system remote is configured..."
+                    sudo flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo || rc=1
+                else
+                    echo "Warning: skipping Flathub system remote (needs sudo): sudo flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo" >&2
+                fi
+            fi
         fi
     fi
 
-    brew bundle --file="$DOTFILES_DIR/Brewfile"
+    brew bundle --file="$DOTFILES_DIR/Brewfile" --force-cleanup || {
+        echo "Warning: brew bundle reported failures; continuing with remaining steps." >&2
+        rc=1
+    }
 
     if [[ "$OS_NAME" == "Linux" ]]; then
-        if command -v pacman &>/dev/null && command -v systemctl &>/dev/null; then
-            echo "Ensuring system Tailscale daemon is installed and enabled..."
-            sudo pacman -S --needed --noconfirm tailscale
-            sudo systemctl enable --now tailscaled
+        if command -v pacman &>/dev/null && command -v systemctl &>/dev/null && command -v tailscale &>/dev/null; then
+            if can_sudo; then
+                echo "Ensuring system Tailscale daemon is enabled..."
+                sudo systemctl enable --now tailscaled || rc=1
+            else
+                echo "Warning: skipping Tailscale daemon setup (needs sudo): sudo systemctl enable --now tailscaled" >&2
+            fi
         fi
     fi
 
@@ -71,6 +112,8 @@ run_brew() {
             gh extension install dlvhdr/gh-dash || true
         fi
     fi
+
+    return "$rc"
 }
 
 cleanup_legacy_path() {
@@ -111,6 +154,10 @@ prepare_stow_target() {
 run_stow() {
     echo "==> Stowing dotfiles into $HOME..."
     ensure_brew_in_path
+    if ! command -v stow &>/dev/null; then
+        echo "Error: stow is not installed. Run ./install.sh --brew first." >&2
+        return 1
+    fi
 
     # Clean up legacy root Git files so XDG ~/.config/git/config takes precedence
     cleanup_legacy_path "$HOME/.gitconfig"
@@ -145,26 +192,44 @@ run_gpg() {
         if command -v brew &>/dev/null && [[ -x "$(brew --prefix)/bin/pinentry-mac" ]]; then
             pinentry_bin="$(brew --prefix)/bin/pinentry-mac"
         else
-            pinentry_bin="/opt/homebrew/bin/pinentry-mac"
+            pinentry_bin="$(command -v pinentry-mac || true)"
         fi
     else
-        pinentry_bin="$(command -v pinentry || echo "/usr/bin/pinentry")"
+        pinentry_bin="$(command -v pinentry || true)"
     fi
 
-    cat > "$HOME/.gnupg/gpg-agent.conf" <<EOF
-enable-ssh-support
-grab
-default-cache-ttl 600
-default-cache-ttl-ssh 600
-pinentry-program $pinentry_bin
-EOF
+    if [[ -z "$pinentry_bin" ]]; then
+        echo "Warning: no pinentry binary found; gpg-agent will use its default prompt." >&2
+    fi
+
+    {
+        echo "enable-ssh-support"
+        echo "grab"
+        echo "default-cache-ttl 600"
+        echo "default-cache-ttl-ssh 600"
+        if [[ -n "$pinentry_bin" ]]; then
+            echo "pinentry-program $pinentry_bin"
+        fi
+    } > "$HOME/.gnupg/gpg-agent.conf"
     chmod 600 "$HOME/.gnupg/gpg-agent.conf"
 
-    if command -v gpg &>/dev/null; then
-        curl -fsSL https://github.com/mmilani1.gpg | gpg --import
+    # Distro socket-activated GnuPG units respawn an older keyboxd on connect
+    # (e.g. 2.4.9 vs Homebrew 2.5.24); mask them so Homebrew's daemons own the sockets.
+    if [[ "$OS_NAME" == "Linux" ]] && command -v systemctl &>/dev/null; then
+        if [[ "$(command -v gpgconf || true)" == *homebrew* ]]; then
+            systemctl --user mask --now \
+                gpg-agent.socket gpg-agent-browser.socket gpg-agent-extra.socket \
+                gpg-agent-ssh.socket keyboxd.socket dirmngr.socket >/dev/null 2>&1 || true
+        fi
     fi
+
     if command -v gpgconf &>/dev/null; then
-        gpgconf --kill gpg-agent || true
+        gpgconf --kill all >/dev/null 2>&1 || true
+    fi
+
+    if command -v gpg &>/dev/null && command -v curl &>/dev/null; then
+        curl -fsSL https://github.com/mmilani1.gpg | gpg --import ||
+            echo "Warning: failed to import GitHub GPG key" >&2
     fi
 }
 
@@ -174,9 +239,98 @@ run_mise() {
     if command -v mise &>/dev/null; then
         mise install
     else
-        echo "Warning: mise is not installed yet. Run --brew first." >&2
+        echo "Error: mise is not installed. Run ./install.sh --brew first." >&2
         return 1
     fi
+}
+
+run_shell() {
+    echo "==> Configuring login shell..."
+    local current_shell=""
+    if [[ "$OS_NAME" == "Darwin" ]] && command -v dscl &>/dev/null; then
+        current_shell="$(dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}')"
+    fi
+    if [[ -z "$current_shell" ]] && command -v getent &>/dev/null; then
+        current_shell="$(getent passwd "$USER" 2>/dev/null | cut -d: -f7)"
+    fi
+    current_shell="${current_shell:-${SHELL:-}}"
+
+    if [[ "$current_shell" == *"/zsh" ]]; then
+        echo "Login shell is already Zsh ($current_shell)."
+        return 0
+    fi
+
+    ensure_brew_in_path
+
+    local target_zsh=""
+    local candidate
+    local candidates=()
+    if command -v zsh &>/dev/null; then
+        candidates+=("$(command -v zsh)")
+    fi
+    for p in /usr/bin/zsh /bin/zsh /usr/local/bin/zsh; do
+        if [[ -x "$p" ]]; then candidates+=("$p"); fi
+    done
+
+    if [[ -r /etc/shells ]]; then
+        for candidate in "${candidates[@]}"; do
+            if grep -Fxq "$candidate" /etc/shells; then
+                target_zsh="$candidate"
+                break
+            fi
+        done
+    fi
+
+    if [[ -z "$target_zsh" ]]; then
+        for candidate in "${candidates[@]}"; do
+            if [[ -x "$candidate" ]]; then
+                target_zsh="$candidate"
+                break
+            fi
+        done
+    fi
+
+    if [[ -z "$target_zsh" ]]; then
+        echo "Error: zsh binary not found. Install zsh or run ./install.sh --brew first." >&2
+        return 1
+    fi
+
+    if [[ -r /etc/shells ]] && ! grep -Fxq "$target_zsh" /etc/shells; then
+        if can_sudo; then
+            echo "Adding $target_zsh to /etc/shells..."
+            echo "$target_zsh" | sudo tee -a /etc/shells >/dev/null
+        else
+            echo "Error: $target_zsh is not in /etc/shells and adding it requires sudo." >&2
+            return 1
+        fi
+    fi
+
+    echo "Changing login shell from $current_shell to $target_zsh..."
+    if can_sudo; then
+        local changed=false
+        if [[ "$OS_NAME" == "Linux" ]] && command -v usermod &>/dev/null; then
+            sudo usermod -s "$target_zsh" "$USER" && changed=true
+        fi
+        if [[ "$changed" == false ]]; then
+            if ! sudo chsh -s "$target_zsh" "$USER"; then
+                echo "Warning: failed to change login shell via sudo." >&2
+                return 1
+            fi
+        fi
+    elif [[ -t 0 ]]; then
+        if ! chsh -s "$target_zsh"; then
+            echo "Warning: failed to change login shell via chsh." >&2
+            return 1
+        fi
+    else
+        echo "Warning: changing login shell requires an interactive terminal or sudo. Run manually: chsh -s $target_zsh" >&2
+        return 1
+    fi
+    if [[ "$OS_NAME" == "Linux" ]] && command -v systemctl &>/dev/null; then
+        systemctl --user set-environment SHELL="$target_zsh" 2>/dev/null || true
+    fi
+
+    echo "Login shell changed to $target_zsh. (Restart terminal or log out to take effect)"
 }
 
 run_macos() {
@@ -190,6 +344,7 @@ run_macos() {
 
 DO_BREW=false
 DO_STOW=false
+DO_SHELL=false
 DO_GPG=false
 DO_MISE=false
 DO_MACOS=false
@@ -197,6 +352,7 @@ DO_MACOS=false
 if [[ $# -eq 0 ]]; then
     DO_BREW=true
     DO_STOW=true
+    DO_SHELL=true
     DO_GPG=true
     DO_MISE=true
     DO_MACOS=true
@@ -207,6 +363,7 @@ else
                 DO_BREW=true
                 DO_STOW=true
                 DO_GPG=true
+                DO_SHELL=true
                 DO_MISE=true
                 DO_MACOS=true
                 ;;
@@ -215,6 +372,9 @@ else
                 ;;
             --stow)
                 DO_STOW=true
+                ;;
+            --shell)
+                DO_SHELL=true
                 ;;
             --gpg)
                 DO_GPG=true
@@ -239,20 +399,17 @@ else
     done
 fi
 
-if [[ "$DO_BREW" == true ]]; then
-    run_brew
-fi
-if [[ "$DO_STOW" == true ]]; then
-    run_stow
-fi
-if [[ "$DO_GPG" == true ]]; then
-    run_gpg
-fi
-if [[ "$DO_MISE" == true ]]; then
-    run_mise
-fi
-if [[ "$DO_MACOS" == true ]]; then
-    run_macos
+STAGE_FAILURES=()
+if [[ "$DO_BREW" == true ]]; then run_brew || STAGE_FAILURES+=("brew"); fi
+if [[ "$DO_STOW" == true ]]; then run_stow || STAGE_FAILURES+=("stow"); fi
+if [[ "$DO_SHELL" == true ]]; then run_shell || STAGE_FAILURES+=("shell"); fi
+if [[ "$DO_GPG" == true ]]; then run_gpg || STAGE_FAILURES+=("gpg"); fi
+if [[ "$DO_MISE" == true ]]; then run_mise || STAGE_FAILURES+=("mise"); fi
+if [[ "$DO_MACOS" == true ]]; then run_macos || STAGE_FAILURES+=("macos"); fi
+
+if ((${#STAGE_FAILURES[@]})); then
+    echo "==> Completed with failures: ${STAGE_FAILURES[*]}" >&2
+    exit 1
 fi
 
 echo "==> Dotfiles setup complete!"

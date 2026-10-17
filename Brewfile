@@ -1,5 +1,5 @@
-tap "can1357/tap"
-tap "nikitabobko/tap" if OS.mac?
+tap "can1357/tap", trusted: true
+tap "nikitabobko/tap", trusted: true if OS.mac?
 
 # Core CLI Tools
 brew "age"
@@ -17,12 +17,11 @@ brew "mise"
 brew "neovim"
 brew "ripgrep"
 brew "sops"
-brew "ssh-to-age"
+brew "tree-sitter-cli"
 brew "starship"
 brew "stow"
 brew "syncthing"
 brew "zoxide"
-brew "zsh"
 
 if OS.mac?
   brew "pinentry-mac"
@@ -48,12 +47,12 @@ end
 if OS.linux?
   brew "pinentry"
   brew "tailscale"
-  cask "font-jetbrains-mono-nerd-font"
-  # Linux GUI Flatpaks
-  flatpak "app.zen_browser.zen"
-  flatpak "com.bitwarden.desktop"
-  flatpak "com.stremio.Stremio"
-  flatpak "com.valvesoftware.Steam"
-  flatpak "com.visualstudio.code"
-  flatpak "dev.vencord.Vesktop"
+  # Linux GUI Flatpaks (requires flatpak CLI and system flathub remote)
+  if Kernel.system("flatpak remotes --system --columns=name 2>/dev/null | grep -qx flathub")
+    flatpak "app.zen_browser.zen"
+    flatpak "com.bitwarden.desktop"
+    flatpak "com.stremio.Stremio"
+    flatpak "com.visualstudio.code"
+    flatpak "dev.vencord.Vesktop"
+  end
 end
